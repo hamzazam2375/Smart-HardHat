@@ -1,0 +1,47 @@
+# Your entries
+.env
+CLAUDE.md
+F26-113.pdf
+
+# Secrets / env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# DB dumps / backups (contain identifiable data, 30-day retention)
+*.dump
+*.sql.gz
+backups/
+
+# Python (backend, ml)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js (frontend)
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# ESP-IDF firmware builds
+build/
+sdkconfig.old
+
+# ML data & artifacts (trial data must not be committed)
+ml/data/
+ml/artifacts/
+*.joblib
+*.pkl
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

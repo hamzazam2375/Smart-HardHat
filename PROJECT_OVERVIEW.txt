@@ -1,0 +1,101 @@
+SMART HARDHAT - PROJECT OVERVIEW
+(Living document. Update after every implementation change. Full spec: F26-113.pdf)
+
+=====================================================================
+1. WHAT IT IS
+=====================================================================
+FYP (FAST-NU Lahore, F26-113). The team is Hamza Azam, Muzzammil Shahid and Roshni Waheed.
+Supervisor: Mr. Saifullah Tanvir.
+A removable IoT module for a construction hardhat. It monitors CO, temperature,
+humidity, motion (fall), battery and outdoor GPS, and has a guarded SOS button.
+Local light, vibration and buzzer alerts work without any network.
+Data flows: Hardhat --LoRa--> ESP32 Gateway --HTTPS--> FastAPI --> PostgreSQL
+            --> Next.js supervisor dashboard (SSE live updates).
+A decision-tree risk model (scikit-learn) gives advisory assessments on minute summaries.
+Scope: one hardhat and one gateway, local network only, no cloud, no worker mobile app,
+no camera or audio, no certified-safety claims.
+
+=====================================================================
+2. KEY DESIGN DECISIONS
+=====================================================================
+Hardware : 2x ESP32 LoRa (Heltec WiFi LoRa 32 V3 class, ESP32-S3 + SX1262),
+           MPU6050 (I2C), electrochemical CO (DFRobot SEN0466 candidate),
+           DHT22/AM2302, GPS over UART (u-blox class), SOS + cancel buttons,
+           LED, vibration motor, buzzer, protected Li battery. Target <=150 g, 12 h.
+Firmware : ESP-IDF. Motion at 50 Hz, CO 1 Hz, temp/humidity every 5 s, battery every 30 s.
+           60 s status summary, urgent events sent immediately.
+Fall     : impact -> orientation change -> inactivity -> 15 s pre-alert (cancel
+           button) -> possible-fall emergency. Re-arms after 10 s of stable movement.
+SOS      : 2 s continuous hold, no countdown.
+CO       : urgent at >=200 ppm. Reset after 30 s below 180 ppm. 35 ppm is a screening warning.
+Heat     : NWS heat index. Warning at 32 C (environmental only).
+Battery  : warnings at 20% (low) and 10% (critical).
+Priority : 1 CO/SOS/fall emergency, 2 fall pre-alert, 3 sensor fault, 4 heat, 5 battery.
+Radio    : point-to-point LoRa (not LoRaWAN). AES-GCM with a 128-bit tag.
+           Nonce = boot_epoch(8 B) + seq(4 B). Separate uplink and downlink keys.
+           Header is 22 B, status body 42 B and tag 16 B, so a packet is 80 B.
+           Replay window is 65,536 sequences.
+Queues   : 64 urgent records on the hardhat, 256 on the gateway. Overflow increments a
+           visible loss counter. Retries at about 1, 3 and 7 s, then slower.
+Backend  : FastAPI. Commit before sending "server accepted". Duplicates are rejected via
+           (device_id, boot_epoch, packet_seq) and source_event_key. Stale after 180 s.
+           Assessment runs asynchronously after commit.
+DB       : PostgreSQL entities are Account, Worker, Device, Assignment (dated intervals),
+           Gateway, Telemetry, Event, AlertAction (append-only), RiskAssessment,
+           ModelVersion, Configuration, Calibration, Recommendation and AuditLog.
+           UUID keys and UTC timestamptz.
+Auth     : individual accounts with Argon2id hashing and secure HttpOnly cookies.
+           Roles are supervisor and admin. No self-registration.
+Model    : decision tree on minute features. Labels are low, moderate, high and critical.
+           Returns "unavailable" with a reason. Splits are made by session group.
+           Compared against a rule baseline.
+Retention: identifiable data deleted after 30 days, including backups and exports.
+API      : /api/auth/session, /api/gateway/packets, /api/gateway/heartbeat,
+           /api/status, /api/events[/{id}[/actions]], /api/workers, /api/assignments,
+           /api/admin/devices, /api/admin/accounts, /api/stream (SSE), /api/health
+UI pages : Sign-in, Overview, Alert detail, Assignment, History, Device health, Config review.
+
+=====================================================================
+3. REPOSITORY LAYOUT (planned, update as created)
+=====================================================================
+firmware/hardhat/   drivers, sensing, detection, alarms, summary, protocol, storage, config
+firmware/gateway/   LoRa receive, auth, persistent queue, HTTPS forward, health
+backend/            FastAPI: schemas, routes, services, repositories, permissions,
+                    inference, retention, migrations
+frontend/           Next.js 16 dashboard (App Router, TS, Tailwind, app/ at root,
+                    fonts self-hosted via `geist` pkg - no Google Fonts calls)
+docker-compose.yml  postgres:18 (container hardhat-db), host port 127.0.0.1:5433, UTC
+db/init/            first-run SQL (enables btree_gist)
+.env / .env.example DB credentials + DATABASE_URL (.env git-ignored)
+ml/                 dataset manifests, training and evaluation, model artifacts
+evaluation/         scenario manifests, recorded inputs, result templates
+docs/               diagrams, configuration decisions
+
+=====================================================================
+4. IMPLEMENTATION STATUS
+=====================================================================
+[ ] Firmware - hardhat (sensing, local rules, alarms, summary, radio)
+[ ] Firmware - gateway
+[ ] Backend - ingestion and deduplication
+[ ] Backend - auth, accounts and devices
+[ ] Backend - workers and assignments
+[ ] Backend - events, alert actions and SSE
+[ ] Backend - risk service
+[ ] Backend - retention, backup and audit
+[~] Database: Postgres 18 running in Docker; schema/migrations not started
+[~] Frontend: Next.js scaffolded + local fonts; no project pages yet
+[ ] ML - dataset, training and evaluation
+[ ] Evaluation / verification checks (V01-V26)
+
+=====================================================================
+5. DECISIONS / DEVIATIONS FROM SPEC
+=====================================================================
+(none yet)
+
+=====================================================================
+6. CHANGELOG
+=====================================================================
+2026-11-15  Project initialized. Added README.md, CLAUDE.md and PROJECT_OVERVIEW.txt.
+            No code yet.
+2026-11-15  Postgres 18 via docker-compose (port 5433, btree_gist). .gitignore added.
+2026-11-15  Next.js 16 frontend scaffolded; Google Fonts replaced with `geist` package.

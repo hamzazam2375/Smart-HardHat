@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:18
+    container_name: hardhat-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "127.0.0.1:5433:5432"   # reachable only from your own PC
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  pgdata:
