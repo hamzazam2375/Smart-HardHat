@@ -31,3 +31,21 @@ cd backend
 .venv\Scripts\pip install -r requirements-dev.txt
 .venv\Scripts\python -m pytest -q
 ```
+
+## Mock data (dev only)
+
+Seeds every table with small, linked, clearly mock data (`MOCK-*` codes,
+`@mock.smarthardhat.test` accounts, `mock:` event keys, `[MOCK]` notes). It does not
+change the schema. Scenarios and flag-bit conventions are listed in the script docstring.
+
+```powershell
+cd backend
+.venv\Scripts\python -m scripts.seed_mock_data           # seed; rerunning adds nothing
+.venv\Scripts\python -m scripts.seed_mock_data --reset   # wipe mock rows, reseed relative to now
+.venv\Scripts\python -m scripts.seed_mock_data --delete  # wipe mock rows only
+```
+
+Timestamps are relative to the first seed time, so "live" devices go stale after 3 min.
+Run `--reset` just before a demo. Mock accounts cannot sign in unless `MOCK_ACCOUNT_PASSWORD`
+is set (requires `argon2-cffi`) on a fresh seed. Refuses non-local hosts without
+`--allow-remote`.
