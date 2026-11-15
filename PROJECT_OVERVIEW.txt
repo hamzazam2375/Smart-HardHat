@@ -68,6 +68,7 @@ backend/            FastAPI: schemas, routes, services, repositories, permission
   app/db_url.py     shared DB URL resolver (.env, forces 127.0.0.1)
   migrations/       env.py + versions/0001_initial_schema.py (all 15 tables, raw SQL)
   tests/            pytest schema tests (each test rolled back; needs DB at head)
+  scripts/seed_mock_data.py  idempotent mock-data seed (--reset / --delete), dev only
   README.md         how to run migrations and tests
 frontend/           Next.js 16 dashboard (App Router, TS, Tailwind, app/ at root,
                     fonts self-hosted via `geist` pkg - no Google Fonts calls).
@@ -92,7 +93,8 @@ docs/               diagrams, configuration decisions
 [ ] Backend - retention, backup and audit
 [x] Database: Postgres 18 in Docker; full schema via Alembic 0001 (15 tables,
     constraints, indexes, append-only triggers), 25 pytest schema tests pass.
-    Retention job not started
+    Retention job not started. Mock seed script: ~1.3k telemetry rows, 19 events, all
+    scenarios (SOS, fall, CO, heat, battery, faults, stale/offline, unknown time).
 [~] Frontend: Next.js scaffolded + local fonts; no project pages yet
 [ ] ML - dataset, training and evaluation
 [ ] Evaluation / verification checks (V01-V26)
@@ -110,6 +112,8 @@ docs/               diagrams, configuration decisions
 - DB: alert_action and audit_log block UPDATE by trigger but allow DELETE, only so the
   30-day retention job can remove identifiable rows.
 - DB: no session table; signed cookie + account.session_version handles revocation.
+- Mock seed: validity_flags / motion_flags bit numbering is a provisional mock convention
+  (spec says "defined bits only" but does not number them). Align with firmware later.
 - Alembic env.py forces host 127.0.0.1 (localhost stalls on IPv6 ::1 on Windows).
 
 =====================================================================
@@ -121,3 +125,4 @@ docs/               diagrams, configuration decisions
 2026-11-15  Next.js 16 frontend scaffolded; Google Fonts replaced with `geist` package.
 2026-11-15  DB schema: Alembic set up in backend/, migration 0001 creates all 15 tables.
 2026-11-15  Schema tests (pytest, 25 pass); removed Next.js boilerplate files.
+2026-11-16  Mock data seed script (backend/scripts/seed_mock_data.py); no schema change.
