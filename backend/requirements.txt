@@ -1,0 +1,5 @@
+# Backend dependencies (migrations for now; FastAPI deps added when the API is built)
+alembic>=1.13
+sqlalchemy>=2.0
+psycopg[binary]>=3.2
+python-dotenv>=1.0

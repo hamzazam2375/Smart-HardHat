@@ -62,8 +62,16 @@ firmware/hardhat/   drivers, sensing, detection, alarms, summary, protocol, stor
 firmware/gateway/   LoRa receive, auth, persistent queue, HTTPS forward, health
 backend/            FastAPI: schemas, routes, services, repositories, permissions,
                     inference, retention, migrations
+  requirements.txt  alembic, sqlalchemy, psycopg, python-dotenv (venv in backend/.venv)
+  requirements-dev.txt  + pytest
+  alembic.ini       Alembic config (no DB URL; it comes from repo-root .env)
+  app/db_url.py     shared DB URL resolver (.env, forces 127.0.0.1)
+  migrations/       env.py + versions/0001_initial_schema.py (all 15 tables, raw SQL)
+  tests/            pytest schema tests (each test rolled back; needs DB at head)
+  README.md         how to run migrations and tests
 frontend/           Next.js 16 dashboard (App Router, TS, Tailwind, app/ at root,
-                    fonts self-hosted via `geist` pkg - no Google Fonts calls)
+                    fonts self-hosted via `geist` pkg - no Google Fonts calls).
+                    create-next-app boilerplate removed (public/ svgs, favicon, demo page)
 docker-compose.yml  postgres:18 (container hardhat-db), host port 127.0.0.1:5433, UTC
 db/init/            first-run SQL (enables btree_gist)
 .env / .env.example DB credentials + DATABASE_URL (.env git-ignored)
@@ -82,7 +90,9 @@ docs/               diagrams, configuration decisions
 [ ] Backend - events, alert actions and SSE
 [ ] Backend - risk service
 [ ] Backend - retention, backup and audit
-[~] Database: Postgres 18 running in Docker; schema/migrations not started
+[x] Database: Postgres 18 in Docker; full schema via Alembic 0001 (15 tables,
+    constraints, indexes, append-only triggers), 25 pytest schema tests pass.
+    Retention job not started
 [~] Frontend: Next.js scaffolded + local fonts; no project pages yet
 [ ] ML - dataset, training and evaluation
 [ ] Evaluation / verification checks (V01-V26)
@@ -90,7 +100,17 @@ docs/               diagrams, configuration decisions
 =====================================================================
 5. DECISIONS / DEVIATIONS FROM SPEC
 =====================================================================
-(none yet)
+- DB: added device_status_snapshot table (spec 4.9.3 needs a "current snapshot" but
+  names no table). Updated only by newer packets with suitable time quality.
+- DB: configuration gained state (draft/active/retired) + activated_at, so the rule
+  "review_reason/reviewer required for activation" can be enforced; one active config.
+- DB: telemetry.battery_is_estimate (spec: "with an estimate flag"); audit_log.resource_type
+  added next to resource_id; created_at added to device, gateway, calibration, recommendation.
+- DB: account.role values = supervisor / admin / admin_supervisor ("combined permissions").
+- DB: alert_action and audit_log block UPDATE by trigger but allow DELETE, only so the
+  30-day retention job can remove identifiable rows.
+- DB: no session table; signed cookie + account.session_version handles revocation.
+- Alembic env.py forces host 127.0.0.1 (localhost stalls on IPv6 ::1 on Windows).
 
 =====================================================================
 6. CHANGELOG
@@ -99,3 +119,5 @@ docs/               diagrams, configuration decisions
             No code yet.
 2026-11-15  Postgres 18 via docker-compose (port 5433, btree_gist). .gitignore added.
 2026-11-15  Next.js 16 frontend scaffolded; Google Fonts replaced with `geist` package.
+2026-11-15  DB schema: Alembic set up in backend/, migration 0001 creates all 15 tables.
+2026-11-15  Schema tests (pytest, 25 pass); removed Next.js boilerplate files.
