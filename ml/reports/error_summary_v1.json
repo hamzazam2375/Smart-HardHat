@@ -1,0 +1,27 @@
+{
+  "test_rows": 360,
+  "underestimated_rows": 96,
+  "underestimation_rate": 0.2667,
+  "critical_underestimated": 5,
+  "critical_total": 12,
+  "elevated_risk_predicted_low": 94,
+  "high_or_critical_predicted_low": 39,
+  "underestimation_by_class": {
+    "low": {
+      "total": 150,
+      "underestimated": 0
+    },
+    "moderate": {
+      "total": 119,
+      "underestimated": 55
+    },
+    "high": {
+      "total": 79,
+      "underestimated": 36
+    },
+    "critical": {
+      "total": 12,
+      "underestimated": 5
+    }
+  }
+}
