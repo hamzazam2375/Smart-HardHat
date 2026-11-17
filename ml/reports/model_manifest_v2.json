@@ -1,0 +1,88 @@
+{
+  "model_name": "risk_forest_v2",
+  "feature_schema_version": "1.0.0",
+  "artifact_reference": "artifacts/risk_forest_v2.joblib",
+  "checksum_algorithm": "sha256",
+  "checksum": "9e5af68cd4cab056794c2249045c77e2598e2ab5f85b84f5defbcc281a59bf20",
+  "created_at": "2026-11-17T15:58:32.761301+00:00",
+  "training_provenance": {
+    "dataset": "synthetic_experiment.csv",
+    "dataset_type": "synthetic",
+    "sessions": 120,
+    "train_sessions": 90,
+    "test_sessions": 30,
+    "split_strategy": "GroupShuffleSplit",
+    "split_random_state": 42,
+    "model_type": "RandomForestClassifier",
+    "n_estimators": 150,
+    "max_depth": 10,
+    "min_samples_leaf": 3,
+    "class_weight": "balanced",
+    "model_random_state": 42,
+    "limitations": [
+      "Training labels generated from synthetic scenarios",
+      "Not validated against real-world safety incidents",
+      "Critical-risk recall remains limited"
+    ]
+  },
+  "validation_envelope": {
+    "features": [
+      "co_latest",
+      "co_mean",
+      "co_max",
+      "temperature_c",
+      "humidity_pct",
+      "heat_index_c",
+      "accel_peak_g",
+      "orientation_change_deg",
+      "inactivity_ms"
+    ],
+    "supported_ranges": {
+      "co_latest": [
+        0,
+        150
+      ],
+      "co_mean": [
+        0,
+        150
+      ],
+      "co_max": [
+        0,
+        150
+      ],
+      "temperature_c": [
+        0,
+        50
+      ],
+      "humidity_pct": [
+        5,
+        95
+      ],
+      "heat_index_c": [
+        0,
+        75
+      ],
+      "accel_peak_g": [
+        0,
+        16
+      ],
+      "orientation_change_deg": [
+        0,
+        180
+      ],
+      "inactivity_ms": [
+        0,
+        60000
+      ]
+    },
+    "expected_window_seconds": 60,
+    "min_co_valid_fraction": 0.8
+  },
+  "evaluation_reference": "reports/evaluation_v2.json",
+  "evaluation_metrics": {
+    "accuracy": 0.9416666666666667,
+    "macro_f1": 0.9037623707976004,
+    "underestimation_rate": 0.025,
+    "critical_underestimated": 4
+  }
+}
