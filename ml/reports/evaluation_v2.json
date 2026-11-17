@@ -1,0 +1,92 @@
+{
+  "model": "random_forest_v2",
+  "dataset_type": "synthetic_scenario_assumptions_only",
+  "feature_schema_version": "1.0.0",
+  "train_rows": 1080,
+  "test_rows": 360,
+  "train_sessions": 90,
+  "test_sessions": 30,
+  "session_overlap": 0,
+  "metrics": {
+    "accuracy": 0.9416666666666667,
+    "macro_f1": 0.9037623707976004,
+    "underestimation_rate": 0.025,
+    "critical_underestimated": 4,
+    "classification_report": {
+      "low": {
+        "precision": 0.9931972789115646,
+        "recall": 0.9733333333333334,
+        "f1-score": 0.9831649831649831,
+        "support": 150.0
+      },
+      "moderate": {
+        "precision": 0.9322033898305084,
+        "recall": 0.9243697478991597,
+        "f1-score": 0.9282700421940928,
+        "support": 119.0
+      },
+      "high": {
+        "precision": 0.8620689655172413,
+        "recall": 0.9493670886075949,
+        "f1-score": 0.9036144578313253,
+        "support": 79.0
+      },
+      "critical": {
+        "precision": 1.0,
+        "recall": 0.6666666666666666,
+        "f1-score": 0.8,
+        "support": 12.0
+      },
+      "accuracy": 0.9416666666666667,
+      "macro avg": {
+        "precision": 0.9468674085648285,
+        "recall": 0.8784342091266887,
+        "f1-score": 0.9037623707976004,
+        "support": 360.0
+      },
+      "weighted avg": {
+        "precision": 0.9444867875067425,
+        "recall": 0.9416666666666667,
+        "f1-score": 0.94145673517922,
+        "support": 360.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        146,
+        4,
+        0,
+        0
+      ],
+      [
+        1,
+        110,
+        8,
+        0
+      ],
+      [
+        0,
+        4,
+        75,
+        0
+      ],
+      [
+        0,
+        0,
+        4,
+        8
+      ]
+    ]
+  },
+  "feature_importance": {
+    "co_latest": 0.06653998002507505,
+    "co_mean": 0.06726567006982116,
+    "co_max": 0.10524487323446544,
+    "temperature_c": 0.2717781099823683,
+    "humidity_pct": 0.007574626750890038,
+    "heat_index_c": 0.3072866033134717,
+    "accel_peak_g": 0.1048718062213878,
+    "orientation_change_deg": 0.04379710271620267,
+    "inactivity_ms": 0.0256412276863179
+  }
+}
