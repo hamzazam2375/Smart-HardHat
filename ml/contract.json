@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "database_migration": "0001",
+  "features": [
+    "co_latest",
+    "co_mean",
+    "co_max",
+    "temperature_c",
+    "humidity_pct",
+    "heat_index_c",
+    "accel_peak_g",
+    "orientation_change_deg",
+    "inactivity_ms"
+  ],
+  "labels": [
+    "low",
+    "moderate",
+    "high",
+    "critical"
+  ],
+  "required_valid_channels": [
+    "co",
+    "environment",
+    "imu"
+  ],
+  "min_co_valid_fraction": 0.8,
+  "require_time_quality": [
+    "trusted",
+    "estimated"
+  ],
+  "expected_window_seconds": 60,
+  "supported_ranges": {
+    "co_latest": [
+      0,
+      150
+    ],
+    "co_mean": [
+      0,
+      150
+    ],
+    "co_max": [
+      0,
+      150
+    ],
+    "temperature_c": [
+      0,
+      50
+    ],
+    "humidity_pct": [
+      5,
+      95
+    ],
+    "heat_index_c": [
+      0,
+      75
+    ],
+    "accel_peak_g": [
+      0,
+      16
+    ],
+    "orientation_change_deg": [
+      0,
+      180
+    ],
+    "inactivity_ms": [
+      0,
+      60000
+    ]
+  },
+  "validity_bits": {
+    "co_invalid": 1,
+    "co_partial": 2,
+    "environment_invalid": 4,
+    "heat_unsupported": 8,
+    "imu_invalid": 16,
+    "battery_unavailable": 32,
+    "gps_no_fix": 64
+  },
+  "notes": [
+    "Provisional validation envelope for controlled demo, not certified sensor limits.",
+    "Flags follow seed_mock_data.py mock conventions, not frozen firmware definitions.",
+    "Only the nine features enter the classifier; other fields are validation or emergency inputs."
+  ]
+}
