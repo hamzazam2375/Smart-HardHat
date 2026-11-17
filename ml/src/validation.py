@@ -45,6 +45,15 @@ def validate(row):
         if not lo <= value <= hi:
             raise InvalidInput("unsupported_range", f"outside_envelope_{name}")
         values.append(value)
-    if not row["co_mean"] <= row["co_max"] or not row["co_latest"] <= row["co_max"]:
-        raise InvalidInput("missing_input", "inconsistent_co_statistics")
+    validated = dict(zip(FEATURES, values))
+
+    if (
+        validated["co_mean"] > validated["co_max"]
+        or validated["co_latest"] > validated["co_max"]
+    ):
+        raise InvalidInput(
+            "missing_input",
+            "inconsistent_co_statistics"
+        )
+
     return values

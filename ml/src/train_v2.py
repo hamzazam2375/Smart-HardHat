@@ -127,7 +127,7 @@ def main():
     bundle = {
         "model": model,
         "features": FEATURES,
-        "feature_schema_version": "1.0.0",
+        "schema_version": CONTRACT["schema_version"],
         "model_name": "risk_forest_v2",
     }
 
