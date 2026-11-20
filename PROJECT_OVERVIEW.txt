@@ -73,6 +73,15 @@ backend/            FastAPI: schemas, routes, services, repositories, permission
 frontend/           Next.js 16 dashboard (App Router, TS, Tailwind, app/ at root,
                     fonts self-hosted via `geist` pkg - no Google Fonts calls).
                     create-next-app boilerplate removed (public/ svgs, favicon, demo page)
+  proxy.ts          optimistic auth redirect (no cookie -> /sign-in)
+  app/sign-in/      sign-in page + form (useActionState)
+  app/(dashboard)/  signed-in shell (sidebar, role nav) + Overview page at /
+  app/actions/auth.ts  signIn / signOut server actions
+  components/overview/  dashboard, alert list, worker card, badges
+  lib/session.ts    signed HttpOnly session cookie (SESSION_SECRET), requireSession()
+  lib/overview-types.ts  snapshot types + thresholds (stale 180 s, CO 35/200, ...)
+  lib/mock/         MOCK accounts + overview snapshot (mirror the DB seed); swap for API
+  .env.example      SESSION_SECRET, MOCK_SIGNIN_PASSWORD
 docker-compose.yml  postgres:18 (container hardhat-db), host port 127.0.0.1:5433, UTC
 db/init/            first-run SQL (enables btree_gist)
 .env / .env.example DB credentials + DATABASE_URL (.env git-ignored)
@@ -95,7 +104,9 @@ docs/               diagrams, configuration decisions
     constraints, indexes, append-only triggers), 25 pytest schema tests pass.
     Retention job not started. Mock seed script: ~1.3k telemetry rows, 19 events, all
     scenarios (SOS, fall, CO, heat, battery, faults, stale/offline, unknown time).
-[~] Frontend: Next.js scaffolded + local fonts; no project pages yet
+[~] Frontend: Sign-in and Overview done on MOCK data (auth, role nav, live ages, stale
+    state, alerts, worker cards, gateways, model, unassigned devices). Not started: Alert
+    detail, Assignment, History, Device health, Config review, Accounts; real API + SSE.
 [ ] ML - dataset, training and evaluation
 [ ] Evaluation / verification checks (V01-V26)
 
@@ -114,6 +125,10 @@ docs/               diagrams, configuration decisions
 - DB: no session table; signed cookie + account.session_version handles revocation.
 - Mock seed: validity_flags / motion_flags bit numbering is a provisional mock convention
   (spec says "defined bits only" but does not number them). Align with firmware later.
+- Frontend: sign-in uses MOCK accounts (seed emails, one dev password) until FastAPI auth
+  exists. Same general error for unknown / wrong password / disabled (UC-01).
+- Frontend: CO screening warning (35 ppm) shown at priority 4 (with heat); the spec's
+  priority list does not name it. Overview "mock live feed" simulates 60 s packets until SSE.
 - Alembic env.py forces host 127.0.0.1 (localhost stalls on IPv6 ::1 on Windows).
 
 =====================================================================
@@ -126,3 +141,5 @@ docs/               diagrams, configuration decisions
 2026-11-15  DB schema: Alembic set up in backend/, migration 0001 creates all 15 tables.
 2026-11-15  Schema tests (pytest, 25 pass); removed Next.js boilerplate files.
 2026-11-16  Mock data seed script (backend/scripts/seed_mock_data.py); no schema change.
+2026-11-21  Frontend: Sign-in + supervisor Overview pages on mock data; signed session
+            cookie, proxy.ts redirect, role-based sidebar, light slate/amber theme.
