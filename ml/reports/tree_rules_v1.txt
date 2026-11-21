@@ -1,0 +1,25 @@
+|--- heat_index_c <= 44.30
+|   |--- heat_index_c <= 36.50
+|   |   |--- co_max <= 36.76
+|   |   |   |--- co_max <= 19.10
+|   |   |   |   |--- heat_index_c <= 31.93
+|   |   |   |   |   |--- class: low
+|   |   |   |   |--- heat_index_c >  31.93
+|   |   |   |   |   |--- class: moderate
+|   |   |   |--- co_max >  19.10
+|   |   |   |   |--- orientation_change_deg <= 43.47
+|   |   |   |   |   |--- class: moderate
+|   |   |   |   |--- orientation_change_deg >  43.47
+|   |   |   |   |   |--- class: moderate
+|   |   |--- co_max >  36.76
+|   |   |   |--- heat_index_c <= 30.04
+|   |   |   |   |--- class: high
+|   |   |   |--- heat_index_c >  30.04
+|   |   |   |   |--- class: high
+|   |--- heat_index_c >  36.50
+|   |   |--- co_mean <= 28.87
+|   |   |   |--- class: high
+|   |   |--- co_mean >  28.87
+|   |   |   |--- class: high
+|--- heat_index_c >  44.30
+|   |--- class: critical

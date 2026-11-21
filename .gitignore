@@ -45,3 +45,15 @@ ml/artifacts/
 Thumbs.db
 .vscode/
 .idea/
+# Python environments
+env/
+# Python cache
+# IDE and OS
+# Environment variables and credentials
+# Large or generated datasets
+ml/data/*.csv
+# Generated model artifacts
+ml/artifacts/*.joblib
+ml/artifacts/*.pkl
+# Logs
+*.log

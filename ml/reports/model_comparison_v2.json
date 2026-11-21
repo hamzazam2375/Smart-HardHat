@@ -1,0 +1,66 @@
+{
+  "tree_v1_reference": {
+    "mean": {
+      "macro_f1": 0.8766,
+      "accuracy": 0.8935,
+      "high_recall": 0.8432,
+      "critical_recall": 0.8667,
+      "underestimation_rate": 0.0806
+    },
+    "std": {
+      "macro_f1": 0.0475,
+      "accuracy": 0.0525,
+      "high_recall": 0.1815,
+      "critical_recall": 0.2173,
+      "underestimation_rate": 0.0552
+    }
+  },
+  "tree_depth8": {
+    "mean": {
+      "macro_f1": 0.9201,
+      "accuracy": 0.9565,
+      "high_recall": 0.9212,
+      "critical_recall": 0.8667,
+      "underestimation_rate": 0.0167
+    },
+    "std": {
+      "macro_f1": 0.0438,
+      "accuracy": 0.0263,
+      "high_recall": 0.0738,
+      "critical_recall": 0.2173,
+      "underestimation_rate": 0.0129
+    }
+  },
+  "tree_depth12": {
+    "mean": {
+      "macro_f1": 0.9349,
+      "accuracy": 0.962,
+      "high_recall": 0.9459,
+      "critical_recall": 0.8667,
+      "underestimation_rate": 0.0167
+    },
+    "std": {
+      "macro_f1": 0.0357,
+      "accuracy": 0.0313,
+      "high_recall": 0.0369,
+      "critical_recall": 0.2173,
+      "underestimation_rate": 0.0145
+    }
+  },
+  "random_forest": {
+    "mean": {
+      "macro_f1": 0.9509,
+      "accuracy": 0.9694,
+      "high_recall": 0.9711,
+      "critical_recall": 0.8667,
+      "underestimation_rate": 0.0139
+    },
+    "std": {
+      "macro_f1": 0.0378,
+      "accuracy": 0.0169,
+      "high_recall": 0.0308,
+      "critical_recall": 0.2173,
+      "underestimation_rate": 0.0109
+    }
+  }
+}
