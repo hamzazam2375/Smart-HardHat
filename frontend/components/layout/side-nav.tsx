@@ -18,12 +18,12 @@ const ALL: Role[] = ["supervisor", "admin", "admin_supervisor"];
 
 const ITEMS: NavItem[] = [
   { label: "Overview", href: "/", roles: SUP, ready: true },
-  { label: "Alerts", href: "/alerts", roles: SUP, ready: false },
-  { label: "Workers", href: "/workers", roles: SUP, ready: false },
-  { label: "Devices", href: "/devices", roles: ALL, ready: false },
-  { label: "History", href: "/history", roles: SUP, ready: false },
-  { label: "Accounts", href: "/accounts", roles: ADM, ready: false },
-  { label: "Settings", href: "/settings", roles: ADM, ready: false },
+  { label: "Alerts", href: "/alerts", roles: SUP, ready: true },
+  { label: "Workers", href: "/workers", roles: SUP, ready: true },
+  { label: "Devices", href: "/devices", roles: ALL, ready: true },
+  { label: "History", href: "/history", roles: SUP, ready: true },
+  { label: "Accounts", href: "/accounts", roles: ADM, ready: true },
+  { label: "Settings", href: "/settings", roles: ADM, ready: true },
 ];
 
 export function SideNav({ role }: { role: Role }) {
@@ -33,7 +33,7 @@ export function SideNav({ role }: { role: Role }) {
   return (
     <nav aria-label="Main" className="-mx-1 flex gap-1 overflow-x-auto md:mx-0 md:flex-col md:overflow-visible">
       {items.map((item) => {
-        const active = pathname === item.href;
+        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         if (!item.ready) {
           return (
             <span

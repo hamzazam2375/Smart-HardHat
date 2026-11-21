@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ActiveAlert, EventType } from "@/lib/overview-types";
 import { formatAge } from "@/lib/format";
 import { Badge, Clock, type Tone } from "./badge";
@@ -17,7 +18,7 @@ export const EVENT_LABEL: Record<EventType, string> = {
   battery_critical: "Critical battery",
 };
 
-const PRIORITY: Record<number, { label: string; tone: Tone; border: string }> = {
+export const PRIORITY: Record<number, { label: string; tone: Tone; border: string }> = {
   1: { label: "Emergency", tone: "danger", border: "border-l-red-600" },
   2: { label: "Fall pre-alert", tone: "danger", border: "border-l-red-400" },
   3: { label: "Sensor fault", tone: "warning", border: "border-l-amber-500" },
@@ -25,7 +26,7 @@ const PRIORITY: Record<number, { label: string; tone: Tone; border: string }> = 
   5: { label: "Battery", tone: "info", border: "border-l-sky-400" },
 };
 
-const LOCAL_STATE: Record<ActiveAlert["localState"], string> = {
+export const LOCAL_STATE: Record<ActiveAlert["localState"], string> = {
   active: "alarm active, no physical acknowledgment",
   physically_acknowledged: "worker acknowledged on the hardhat",
   cleared: "cleared on the hardhat",
@@ -90,6 +91,12 @@ function AlertRow({ alert, now }: { alert: ActiveAlert; now: number }) {
           </dd>
         </div>
       </dl>
+      <Link
+        href={`/alerts/${alert.eventId}`}
+        className="mt-3 inline-block text-sm font-medium text-slate-900 underline-offset-2 hover:underline"
+      >
+        {alert.state === "open" ? "Open to respond →" : "View detail and history →"}
+      </Link>
     </li>
   );
 }

@@ -72,10 +72,20 @@ backend/            FastAPI: schemas, routes, services, repositories, permission
   app/security.py   Argon2id verify, HMAC-signed session token (account, session_version, expiry)
   app/deps.py       current_account / require_supervisor (Table 4.34)
   app/flags.py      validity/motion flag bits (provisional mock convention)
-  app/routes/       auth.py (/api/auth/session), overview.py (/api/status, /api/events)
+  app/routes/       auth.py (/api/auth/session), overview.py (/api/status, /api/events),
+                    events.py (/api/events/{id}, /{id}/actions), workers.py (/api/workers),
+                    assignments.py (/api/assignments, /{id}/end), history.py (/api/history),
+                    devices.py (/api/devices, /api/admin/devices[/{id}/state]),
+                    configuration.py (/api/admin/configurations[/{id}/approve]),
+                    accounts.py (/api/admin/accounts[/{id}/enabled|role|reset-password])
   app/services/overview.py  DB row -> dashboard shape (quality states, risk override, alerts)
+  app/services/events.py    alert detail shape (readings, location, assignment, history, recs)
+  app/services/devices.py   device-health shape (per-channel state + affected function)
+  app/services/configuration.py  threshold/timing ranges, contradiction checks, checksum
   migrations/       env.py + versions/0001_initial_schema.py (all 15 tables, raw SQL)
-  tests/            pytest schema + API tests (each test rolled back; needs DB at head)
+  tests/            pytest schema + API tests (each test rolled back; needs DB at head);
+                    test_pages_api.py covers all page routes (detail/actions, workers,
+                    assignments, history, devices, configuration, accounts)
   scripts/seed_mock_data.py  idempotent mock-data seed (--reset / --delete), dev only
   README.md         how to run migrations and tests
 frontend/           Next.js 16 dashboard (App Router, TS, Tailwind, app/ at root,
@@ -84,14 +94,37 @@ frontend/           Next.js 16 dashboard (App Router, TS, Tailwind, app/ at root
   proxy.ts          optimistic auth redirect (no cookie -> /sign-in)
   app/sign-in/      sign-in page + form (useActionState)
   app/(dashboard)/  signed-in shell (sidebar, role nav) + Overview page at /
+    alerts/[id]/    Alert detail + acknowledge / note / resolve (+ not-found)
+    workers/        Workers + worker-to-device assignment page
+    history/        History with filters + cursor pagination
+    devices/        Device health (all roles) + admin register/disable/retire
+    alerts/         Active alert list (filters by priority/state)
+    accounts/       Account admin (create, role, enable/disable, reset password)
+    settings/       Configuration review (drafts, approve, reported versions)
   app/actions/auth.ts  signIn / signOut server actions (call the backend)
+  app/actions/alerts.ts, assignments.ts  respond / createWorker / createAssignment / endAssignment
+  app/actions/devices.ts  registerDevice / setDeviceState (admin)
+  app/actions/admin.ts  accounts + configuration server actions (admin)
   app/error.tsx     "Status unavailable" page when the backend cannot be reached
   components/overview/  dashboard, alert list, worker card, badges
+  components/alerts/    alert detail view, response panel
+  components/workers/   workers page, assign form, add-worker + end-assignment forms
+  components/history/   history view (filters, results, pagination)
+  components/devices/   device health view, admin controls
+  components/accounts/  accounts page;  components/settings/  configuration review
+  components/alerts/alerts-board.tsx  active alert list
+  components/forms.tsx  SubmitButton, FormMessage, input style
   lib/api.ts        server-side fetch to BACKEND_URL (Bearer token), ApiUnavailable/ApiAuth errors
   lib/session.ts    HttpOnly cookie holds the backend token; re-validated per request
   lib/accounts.ts   Role type, canSupervise/canAdminister, ROLE_LABEL
   lib/overview.ts   loadOverviewSnapshot(): /api/status + /api/events
   lib/overview-types.ts  snapshot types + thresholds (stale 180 s, CO 35/200, ...)
+  lib/alerts.ts, alert-types.ts            alert detail loader + types
+  lib/assignments.ts, assignment-types.ts  workers/assignments loader + types
+  lib/history.ts, history-types.ts         history loader + types
+  lib/devices.ts, device-types.ts          device-health loader + types
+  lib/admin.ts, admin-types.ts             accounts + configuration loaders + types
+  lib/form-state.ts     server-action result shape
   .env.example      BACKEND_URL
 docker-compose.yml  postgres:18 (container hardhat-db), host port 127.0.0.1:5433, UTC
 db/init/            first-run SQL (enables btree_gist)
@@ -114,21 +147,32 @@ docs/               diagrams, configuration decisions
 [ ] Firmware - hardhat (sensing, local rules, alarms, summary, radio)
 [ ] Firmware - gateway
 [ ] Backend - ingestion and deduplication
-[~] Backend - auth: sign-in/session/sign-out (Argon2id, signed token, session_version).
-    Not done: account + device admin, sign-in rate limiting.
+[~] Backend - auth: sign-in/session/sign-out (Argon2id, signed token, session_version);
+    account admin (create, role, enable/disable, reset, last-admin guard). Tested.
+    Not done: sign-in rate limiting, self-service password change.
 [~] Backend - read API for Overview: /api/status, /api/events (unresolved), /api/health.
-    API tests pass.
-[ ] Backend - workers and assignments
-[ ] Backend - events, alert actions and SSE
+    Tested.
+[~] Backend - workers and assignments: list/create worker, list/create/end assignment
+    (atomic reassignment, 409 on conflict, audited). Tested.
+    Not done: deactivate worker, delayed-event assignment association (ingestion).
+[~] Backend - events: GET /api/events/{id}, POST /{id}/actions (row-version 409, audited);
+    GET /api/history (filters, retention clamp, cursor pages). Tested. Not done: SSE.
+[x] Backend - devices: GET /api/devices health (all roles), admin register / disable /
+    retire (audited, no key material returned). Tested.
+[x] Backend - configuration review: drafts with range + contradiction checks, approve
+    with reason/reviewer (one active), device-reported versions. Tested.
+    Backend tests: 49 pass (25 schema + 24 API).
 [ ] Backend - risk service
 [ ] Backend - retention, backup and audit
 [x] Database: Postgres 18 in Docker; full schema via Alembic 0001 (15 tables,
     constraints, indexes, append-only triggers), 25 pytest schema tests pass.
     Retention job not started. Mock seed script: ~1.3k telemetry rows, 19 events, all
     scenarios (SOS, fall, CO, heat, battery, faults, stale/offline, unknown time).
-[~] Frontend: Sign-in and Overview on the REAL backend (mock files removed); 30 s polling
-    until SSE. Not started: Alert detail, Assignment, History, Device health, Config
-    review, Accounts; SSE.
+[x] Frontend: all pages built on the REAL backend: Sign-in, Overview, Alerts, Alert
+    detail, Workers/assignment, History, Device health, Accounts, Settings (config
+    review). tsc, eslint and `next build` pass; every page render-smoke-tested per role
+    against the live API. 30 s polling until SSE. Not done: SSE; form submits not yet
+    clicked through in a browser (backend write paths are covered by pytest).
 [~] ML: PoC done on SYNTHETIC data (120 sessions, grouped split). v2 random forest:
     acc 0.94, macro F1 0.90, critical recall 8/12. Packaged with sha256 manifest;
     assess() returns available/unavailable + reason codes. Not done: backend wiring
@@ -161,6 +205,34 @@ docs/               diagrams, configuration decisions
 - Device "charging" not shown: no schema field for it.
 - Frontend: CO screening warning (35 ppm) shown at priority 4 (with heat); the spec's
   priority list does not name it.
+- Alert actions: resolve allowed only from "acknowledged" (acknowledge first); notes allowed in
+  any state. row_version bumps only on acknowledge/resolve (as in the seed); notes are append-only.
+- Alert detail: recommendation = latest approved library row for the alert's factor code,
+  falling back to "unrecognized". Location = evidence.gps at detection, else the last
+  telemetry fix before receipt labelled "last known".
+- Assignments: start time is always "now" (server); no future-dated intervals. Every open
+  conflicting interval must be explicitly selected to close, else 409. assignment.reason
+  stores the END reason ("reassigned" or supervisor text). Added GET /api/assignments
+  (not in Table 5.2) to list devices/eligibility, active and 30-day history for the page.
+- Workers: worker_code stored upper-cased and trimmed.
+- History: separate GET /api/history (Table 5.2 puts filters on GET /api/events, which the
+  Overview already uses for unresolved alerts). Range applies to SERVER RECEIPT time
+  (detection time may be unknown); from/to must carry a time zone; lower bound clamped to
+  30 days. Events only; assignment changes are on the Workers page, not in History.
+- Devices: GET /api/devices (not in Table 5.2) is the read view for all roles; worker names
+  only for supervisors. Admin state change: retired is final; disable/retire refused (409)
+  while an assignment is active. Device label stored upper-cased.
+- Workers nav = Workers + assignment page (spec calls it "Assignment").
+- Configuration: ranges in app/services/configuration.py are PROTOTYPE review bounds (not
+  certified setpoints). "Approve" = record reason + reviewer and make it the server's active
+  version; it never updates a hardhat (wired setup only, UC-20). No draft edit/delete:
+  save a new version instead.
+- Accounts: server generates the temporary password (shown once, stored as Argon2id). No
+  "must change password" flag exists in the schema, so the change is not forced yet.
+  Admins cannot disable/demote themselves; the last usable admin is protected.
+- Alerts nav = active (unresolved) list from GET /api/events; resolved ones are in History.
+- Times written by API actions (alert_action.created_at, assignment start/end) use
+  clock_timestamp() (actual server time), not now() (transaction start).
 - ML: final model is a random forest (v2), not the spec's single decision tree; it beat
   the v1 tree in grouped CV (macro F1 0.95 vs 0.88). v1 tree kept as reference.
 - ML: trained on synthetic scenario labels only; seeded risk_assessment rows are NOT
@@ -186,3 +258,11 @@ docs/               diagrams, configuration decisions
 2026-11-21  Overview updated to record ML status, layout and deviations.
 2026-11-21  Thin backend: FastAPI auth + /api/status + /api/events + tests; frontend
             Sign-in/Overview switched from lib/mock to the API.
+2026-11-22  Alert detail page + Workers/assignment page, with backend routes (event detail,
+            alert actions, workers, assignments). Untested.
+2026-11-22  History page + Device-health page, with /api/history, /api/devices and
+            /api/admin/devices routes.
+2026-11-22  Alerts list, Accounts and Settings (configuration review) pages + admin
+            routes. 17 new API tests (49 pass); tsc/eslint/build pass; render smoke test
+            of every page per role. Fixed: proxy.ts matcher regex (only "/" redirected),
+            clock_timestamp() for action/assignment times.
