@@ -23,14 +23,14 @@ export function freshness(d: { receivedAt: string | null }, now: number): Freshn
   return now - Date.parse(d.receivedAt) > STALE_AFTER_S * 1000 ? "stale" : "current";
 }
 
-interface Shown {
+export interface Shown {
   text: string;
   note?: string;
   tone?: Tone; // when set, a badge is shown with `note`
 }
 
 /** Missing and invalid are distinct states and never shown as a number. */
-function showReading(r: Reading, unit: string, digits = 0): Shown {
+export function showReading(r: Reading, unit: string, digits = 0): Shown {
   if (r.quality === "invalid") return { text: "Invalid", note: "sensor fault", tone: "warning" };
   if (r.quality === "unsupported") return { text: "Not computed", note: "outside formula range" };
   if (r.quality === "missing" || r.value === null) return { text: "No data" };

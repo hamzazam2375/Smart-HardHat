@@ -30,3 +30,19 @@ export function Clock({ iso }: { iso: string }) {
     </time>
   );
 }
+
+/** Date + wall-clock time (for history and detail pages). */
+export function DateTime({ iso }: { iso: string }) {
+  return (
+    <time dateTime={iso} suppressHydrationWarning>
+      {new Date(iso).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })}
+    </time>
+  );
+}

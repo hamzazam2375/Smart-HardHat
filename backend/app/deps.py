@@ -42,3 +42,10 @@ def require_supervisor(account: dict = Depends(current_account)) -> dict:
 def account_json(row: dict) -> dict:
     return {"id": str(row["account_id"]), "email": row["email"], "displayName": row["display_name"],
             "role": row["role"]}
+
+
+def require_admin(account: dict = Depends(current_account)) -> dict:
+    """Device registration/retirement and account administration (Table 4.34, FR-28, FR-29)."""
+    if account["role"] not in ADMIN_ROLES:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Administrator role required")
+    return account

@@ -17,7 +17,7 @@ async function OverviewContent() {
         <h1 className="text-2xl font-semibold">Welcome, {account.displayName}</h1>
         <p className="mt-2 text-sm text-slate-600">
           Your account has administrator permissions only. Live worker
-          readings are shown to supervisors. The Accounts, Devices and Settings pages are not built yet.
+          readings are shown to supervisors. Use Accounts, Devices and Settings in the menu.
         </p>
       </div>
     );
