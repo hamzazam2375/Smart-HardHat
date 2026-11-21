@@ -1,5 +1,31 @@
 # Backend
 
+## API (FastAPI)
+
+Thin read-only API for the built pages (Sign-in, Overview). Needs the DB up and migrated.
+
+```powershell
+cd backend
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\uvicorn app.main:app --reload --port 8000    # docs at http://127.0.0.1:8000/docs
+```
+
+| Endpoint | Who | What |
+|---|---|---|
+| `POST /api/auth/session` | anyone | `{email, password}` -> `{token, expiresAt, account}`; one 401 message for every failure |
+| `GET /api/auth/session` | signed in | current account (rejects disabled / bumped `session_version`) |
+| `DELETE /api/auth/session` | signed in | sign-out (token is stateless; the client drops its cookie) |
+| `GET /api/status` | supervisor roles | devices (latest snapshot, worker, risk), gateways, active model |
+| `GET /api/events` | supervisor roles | unresolved (open / acknowledged) events |
+| `GET /api/health` | anyone | API + DB check |
+
+The token goes in `Authorization: Bearer <token>` (the Next.js server forwards it from its
+HttpOnly cookie) or the `hh_session` cookie. Root `.env`: `SESSION_SECRET` (32+ chars;
+random per process if unset in dev, so restarts sign everyone out), `SITE_NAME`, `APP_ENV`.
+
+To sign in with the mock accounts, set `MOCK_ACCOUNT_PASSWORD` in the root `.env`, then run
+`.venv\Scripts\python -m scripts.seed_mock_data --reset`.
+
 ## Database migrations (Alembic)
 
 Prerequisites: Docker DB running (`docker compose up -d` from repo root) and a filled-in
@@ -21,7 +47,7 @@ sync `psycopg` driver automatically. If `DATABASE_URL` is not set, it is built f
 New migration: `.venv\Scripts\alembic revision -m "describe change"`, then write the SQL
 in `upgrade()` / `downgrade()`. Never edit 0001 after teammates have applied it.
 
-## Schema tests
+## Tests (schema + API)
 
 Needs the DB up and migrated to head. Every test runs in a transaction that is rolled
 back, so no data is left in the dev database.
