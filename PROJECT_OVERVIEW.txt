@@ -62,21 +62,49 @@ firmware/hardhat/   drivers, sensing, detection, alarms, summary, protocol, stor
 firmware/gateway/   LoRa receive, auth, persistent queue, HTTPS forward, health
 backend/            FastAPI: schemas, routes, services, repositories, permissions,
                     inference, retention, migrations
-  requirements.txt  alembic, sqlalchemy, psycopg, python-dotenv (venv in backend/.venv)
-  requirements-dev.txt  + pytest
+  requirements.txt  alembic, sqlalchemy, psycopg, dotenv, fastapi, uvicorn, argon2-cffi
+  requirements-dev.txt  + pytest, httpx
   alembic.ini       Alembic config (no DB URL; it comes from repo-root .env)
   app/db_url.py     shared DB URL resolver (.env, forces 127.0.0.1)
+  app/main.py       FastAPI app (uvicorn app.main:app --port 8000)
+  app/config.py     SESSION_SECRET, SITE_NAME, APP_ENV from root .env
+  app/db.py         engine + per-request transaction (get_conn)
+  app/security.py   Argon2id verify, HMAC-signed session token (account, session_version, expiry)
+  app/deps.py       current_account / require_supervisor (Table 4.34)
+  app/flags.py      validity/motion flag bits (provisional mock convention)
+  app/routes/       auth.py (/api/auth/session), overview.py (/api/status, /api/events)
+  app/services/overview.py  DB row -> dashboard shape (quality states, risk override, alerts)
   migrations/       env.py + versions/0001_initial_schema.py (all 15 tables, raw SQL)
-  tests/            pytest schema tests (each test rolled back; needs DB at head)
+  tests/            pytest schema + API tests (each test rolled back; needs DB at head)
   scripts/seed_mock_data.py  idempotent mock-data seed (--reset / --delete), dev only
   README.md         how to run migrations and tests
 frontend/           Next.js 16 dashboard (App Router, TS, Tailwind, app/ at root,
                     fonts self-hosted via `geist` pkg - no Google Fonts calls).
                     create-next-app boilerplate removed (public/ svgs, favicon, demo page)
+  proxy.ts          optimistic auth redirect (no cookie -> /sign-in)
+  app/sign-in/      sign-in page + form (useActionState)
+  app/(dashboard)/  signed-in shell (sidebar, role nav) + Overview page at /
+  app/actions/auth.ts  signIn / signOut server actions (call the backend)
+  app/error.tsx     "Status unavailable" page when the backend cannot be reached
+  components/overview/  dashboard, alert list, worker card, badges
+  lib/api.ts        server-side fetch to BACKEND_URL (Bearer token), ApiUnavailable/ApiAuth errors
+  lib/session.ts    HttpOnly cookie holds the backend token; re-validated per request
+  lib/accounts.ts   Role type, canSupervise/canAdminister, ROLE_LABEL
+  lib/overview.ts   loadOverviewSnapshot(): /api/status + /api/events
+  lib/overview-types.ts  snapshot types + thresholds (stale 180 s, CO 35/200, ...)
+  .env.example      BACKEND_URL
 docker-compose.yml  postgres:18 (container hardhat-db), host port 127.0.0.1:5433, UTC
 db/init/            first-run SQL (enables btree_gist)
 .env / .env.example DB credentials + DATABASE_URL (.env git-ignored)
-ml/                 dataset manifests, training and evaluation, model artifacts
+ml/                 standalone risk-model PoC (own venv, requirements.txt, README.md)
+  contract.json     9 features, labels, validity bits, supported ranges (schema 1.0.0)
+  src/              generate_experiment (synthetic data), train (v1 tree), train_v2 (RF),
+                    compare_models, analyze_errors, package_model, inference.assess(),
+                    safety, validation, backend_adapter, demo
+  artifacts/        risk_forest_v2.joblib (git-ignored)
+  reports/          evaluation v1/v2, model comparison, error analysis, manifest v2
+  tests/            contract, v2 inference, backend adapter
+  data/             generated synthetic CSV (git-ignored)
 evaluation/         scenario manifests, recorded inputs, result templates
 docs/               diagrams, configuration decisions
 
@@ -86,7 +114,10 @@ docs/               diagrams, configuration decisions
 [ ] Firmware - hardhat (sensing, local rules, alarms, summary, radio)
 [ ] Firmware - gateway
 [ ] Backend - ingestion and deduplication
-[ ] Backend - auth, accounts and devices
+[~] Backend - auth: sign-in/session/sign-out (Argon2id, signed token, session_version).
+    Not done: account + device admin, sign-in rate limiting.
+[~] Backend - read API for Overview: /api/status, /api/events (unresolved), /api/health.
+    API tests pass.
 [ ] Backend - workers and assignments
 [ ] Backend - events, alert actions and SSE
 [ ] Backend - risk service
@@ -95,8 +126,13 @@ docs/               diagrams, configuration decisions
     constraints, indexes, append-only triggers), 25 pytest schema tests pass.
     Retention job not started. Mock seed script: ~1.3k telemetry rows, 19 events, all
     scenarios (SOS, fall, CO, heat, battery, faults, stale/offline, unknown time).
-[~] Frontend: Next.js scaffolded + local fonts; no project pages yet
-[ ] ML - dataset, training and evaluation
+[~] Frontend: Sign-in and Overview on the REAL backend (mock files removed); 30 s polling
+    until SSE. Not started: Alert detail, Assignment, History, Device health, Config
+    review, Accounts; SSE.
+[~] ML: PoC done on SYNTHETIC data (120 sessions, grouped split). v2 random forest:
+    acc 0.94, macro F1 0.90, critical recall 8/12. Packaged with sha256 manifest;
+    assess() returns available/unavailable + reason codes. Not done: backend wiring
+    (model_version row, risk_assessment inserts), real-hardware data, final flag bits.
 [ ] Evaluation / verification checks (V01-V26)
 
 =====================================================================
@@ -114,6 +150,23 @@ docs/               diagrams, configuration decisions
 - DB: no session table; signed cookie + account.session_version handles revocation.
 - Mock seed: validity_flags / motion_flags bit numbering is a provisional mock convention
   (spec says "defined bits only" but does not number them). Align with firmware later.
+- Auth: backend issues an HMAC-signed token (not a session table); Next.js keeps it in an
+  HttpOnly cookie and forwards it as Bearer server-side. Browser never calls the API.
+  Same general error for unknown / wrong password / disabled (UC-01).
+- Overview: polls every 30 s (router.refresh) until SSE /api/stream exists.
+- API adds heat-index quality "unsupported" (outside NWS range), distinct from missing.
+- Alerts show event.local_state (hardhat state) because the schema has no physical-ack time.
+- Model "version" shown = artifact file name (model_version has no name column); activation
+  time from audit_log "model.activate", else created_at.
+- Device "charging" not shown: no schema field for it.
+- Frontend: CO screening warning (35 ppm) shown at priority 4 (with heat); the spec's
+  priority list does not name it.
+- ML: final model is a random forest (v2), not the spec's single decision tree; it beat
+  the v1 tree in grouped CV (macro F1 0.95 vs 0.88). v1 tree kept as reference.
+- ML: trained on synthetic scenario labels only; seeded risk_assessment rows are NOT
+  used as ground truth. Validation envelope ranges are demo bounds, not sensor limits.
+- ML: missing/unsupported heat index -> "unavailable" (conservative; excludes many cool
+  windows in the mock seed).
 - Alembic env.py forces host 127.0.0.1 (localhost stalls on IPv6 ::1 on Windows).
 
 =====================================================================
@@ -126,3 +179,10 @@ docs/               diagrams, configuration decisions
 2026-11-15  DB schema: Alembic set up in backend/, migration 0001 creates all 15 tables.
 2026-11-15  Schema tests (pytest, 25 pass); removed Next.js boilerplate files.
 2026-11-16  Mock data seed script (backend/scripts/seed_mock_data.py); no schema change.
+2026-11-17  ML PoC (ml/): synthetic data, v1 tree, v2 random forest, packaging, inference
+            adapter, tests and reports. Not yet wired to the backend.
+2026-11-21  Frontend: Sign-in + supervisor Overview pages on mock data; signed session
+            cookie, proxy.ts redirect, role-based sidebar, light slate/amber theme.
+2026-11-21  Overview updated to record ML status, layout and deviations.
+2026-11-21  Thin backend: FastAPI auth + /api/status + /api/events + tests; frontend
+            Sign-in/Overview switched from lib/mock to the API.
